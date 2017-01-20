@@ -33,7 +33,7 @@ li {
     margin: 0 0 5px 0
 }
 
-#userlist {
+#list {
     position: fixed;
     left: 50%;
     list-style: none;
@@ -75,4 +75,7 @@ li {
     from { transform: none;        }
     50%  { transform: scale(1.05); }
     to   { transform: none;        }
+}
+#back {
+	display: none
 }

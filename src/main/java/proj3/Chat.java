@@ -10,18 +10,32 @@ import static spark.Spark.*;
 
 public class Chat {
 
-    // this map is shared between sessions and threads, so it needs to be thread-safe (http://stackoverflow.com/a/2688817)
-    static Map<Session, String> userUsernameMap = new ConcurrentHashMap<>();
-    static int nextUserNumber = 1; //Assign to username for next connecting user
+	private String name;
+    
+	Chat(String name){
+		this.name=name;
+	}
 
+	
+	// this map is shared between sessions and threads, so it needs to be thread-safe (http://stackoverflow.com/a/2688817)
+    private Map<Session, String> userUsernameMap = new ConcurrentHashMap<>();
+    private int nextUserNumber = 1; //Assign to username for next connecting user
+
+    public void addSession(Session session,String name){
+    	this.userUsernameMap.put(session,name);
+    }
+    public void removeSession(Session session){
+    	this.userUsernameMap.remove(session);
+    }
+    
  
     //Sends a message from one user to all users, along with a list of current usernames
-    public static void broadcastMessage(String sender, String message) {
-        userUsernameMap.keySet().stream().filter(Session::isOpen).forEach(session -> {
-            try {
+    public void broadcastMessage(Session senderSession,String message) {
+        this.userUsernameMap.keySet().stream().filter(Session::isOpen).forEach(session -> {
+        	try {
                 session.getRemote().sendString(String.valueOf(new JSONObject()
-                    .put("userMessage", createHtmlMessageFromSender(sender, message))
-                    .put("userlist", userUsernameMap.values())
+                    .put("userMessage",createHtmlMessageFromSender(this.userUsernameMap.get(senderSession), message))
+                    .put("userlist", this.userUsernameMap.values())
                 ));
             } catch (Exception e) {
                 e.printStackTrace();
@@ -30,7 +44,7 @@ public class Chat {
     }
 
     //Builds a HTML element with a sender-name, a message, and a timestamp,
-    private static String createHtmlMessageFromSender(String sender, String message) {
+    private String createHtmlMessageFromSender(String sender, String message) {
         return article().with(
                 b(sender + " says:"),
                 p(message),
