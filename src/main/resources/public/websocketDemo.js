@@ -1,9 +1,11 @@
 function getName(){
-	var name="";
-	while(name==""){
-		name=prompt("What is your name?");
+	if(readCookie("username")==null){
+		var name="";
+		while(name==""){
+			name=prompt("What is your name?");
+		}
+		document.cookie = "username="+name;
 	}
-	document.cookie = "username="+name;
 }
 getName();
 
@@ -11,14 +13,17 @@ getName();
 //possible types "main","chat","change","back","setname"
 var messageTyp="setname";
 
-//Establish the WebSocket connection and set up event handlers
 var webSocket = new WebSocket("ws://" + location.hostname + ":" + location.port + "/chat/");
-webSocket.onmessage = function (msg) { updatePage(msg); };
-//webSocket.onclose = function () { alert("WebSocket connection closed") };
+webSocket.onmessage = function (msg) { 
+	updatePage(msg); 
+};
+webSocket.onclose = function () { 
+	document.body.innerHTML="WebSocket connection closed";
+};
 webSocket.onopen = function () { 
 	sendMessage(readCookie("username"));
 	messageTyp="main";
-}
+};
 
 function readCookie(name) {
     var nameEQ = name + "=";
@@ -31,9 +36,6 @@ function readCookie(name) {
     return null;
 }
 
-
-
-//Send message if "Send" is clicked
 id("send").addEventListener("click", function () {
     sendMessage(id("message").value);
 });
@@ -44,12 +46,10 @@ id("back").addEventListener("click", function () {
 	messageTyp="main";
 });
 
-//Send message if enter is pressed in the input field
 id("message").addEventListener("keypress", function (e) {
     if (e.keyCode === 13) { sendMessage(e.target.value); }
 });
 
-//Send a message if it's not empty, then clear the input field
 function sendMessage(message) {
 	if (message !== "") {
 		var mes={"typ":messageTyp,"message":message};
@@ -91,13 +91,10 @@ function change(name){
 	messageTyp="chat";
 }
 
-
-//Helper function for inserting HTML as the first child of an element
 function insert(targetId, message) {
     id(targetId).insertAdjacentHTML("afterbegin", message);
 }
 
-//Helper function for selecting element by id
 function id(id) {
     return document.getElementById(id);
 }

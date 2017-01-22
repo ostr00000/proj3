@@ -8,17 +8,16 @@ import org.eclipse.jetty.websocket.api.*;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.simple.JSONValue;
+
 
 @WebSocket
 public class ChatWebSocketHandler {
 	private Map<String, Chat> chats = new ConcurrentHashMap<>();
 	private Map<Session, UserInfo> users = new ConcurrentHashMap<>();
-	private int index = 1;
-
 	private String messageJsonListOfChats;
 
 	public ChatWebSocketHandler() {
+		chats.put("ChatBox", new ChatBox("ChatBox", this));
 		makeStringJson();
 	}
 
@@ -28,7 +27,7 @@ public class ChatWebSocketHandler {
 
 	@OnWebSocketConnect
 	public void onConnect(Session user) throws Exception {
-		UserInfo info = new UserInfo("User" + index++);
+		UserInfo info = new UserInfo("User");
 		users.put(user, info);
 
 		updateListOfChats(user);
@@ -49,16 +48,18 @@ public class ChatWebSocketHandler {
 			JSONObject json = new JSONObject(mes);
 			String typ = (String) json.get("typ");
 			String message = (String) json.get("message");
+
 			if (typ.equals("chat")) {
-				users.get(user).getChat().broadcastMessage(user, message);
+				UserInfo u=users.get(user);
+				u.getChat().broadcastMessage(u.getName(), message);
 
 			} else if (typ.equals("main")) {
+				if (chats.containsKey(message))
+					return; 
 				chats.put(message, new Chat(message, this));
 				makeStringJson();
-				// users.entrySet().stream().filter( )
-				users.keySet().stream().filter(Session::isOpen).forEach(ses -> {
-					updateListOfChats(ses);
-				});
+				users.entrySet().stream().filter(p -> p.getKey().isOpen() && p.getValue().getChat() == null)
+						.forEach(p -> updateListOfChats(p.getKey()));
 
 			} else if (typ.equals("change")) {
 				Chat chat = chats.get(message);
