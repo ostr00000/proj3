@@ -3,7 +3,6 @@ package proj3;
 import static spark.Spark.init;
 import static spark.Spark.staticFileLocation;
 import static spark.Spark.webSocket;
-import static spark.Spark.*;
 
 public class MainProj3 {
 

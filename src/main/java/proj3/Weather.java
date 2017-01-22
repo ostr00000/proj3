@@ -100,6 +100,7 @@ public class Weather {
 		return ret;
 	}
 	
+	@SuppressWarnings("unchecked")
 	private String download() {
 		String ret = null;
 		JsonFromUrl jsonDownload = new JsonFromUrl("http://api.openweathermap.org/data/2.5/weather?q=" + fileName

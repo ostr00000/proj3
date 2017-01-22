@@ -4,14 +4,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.json.JSONObject;
-
 
 public class ChatBox extends Chat{
-	private static Pattern time=Pattern.compile("[Tt]ime");
-	private static Pattern weather=Pattern.compile("[Ww]eather");
-	private static Pattern day=Pattern.compile("[Dd]ay");
+	private static Pattern time=Pattern.compile(".*[Tt]ime.*");
+	private static Pattern weather=Pattern.compile(".*[Ww]eather.*");
+	private static Pattern day=Pattern.compile(".*[Dd]ay.*");
 	
 	private Weather weatherInCracow;
 	

@@ -6,7 +6,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static j2html.TagCreator.*;
-import static spark.Spark.*;
 
 public class Chat {
 	private ChatWebSocketHandler webSocket;
