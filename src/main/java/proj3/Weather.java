@@ -12,36 +12,60 @@ import org.json.simple.JSONValue;
 import java.util.Date;
 
 public class Weather {
-	String fileName;
-	JSONObject json = null;
-	long time = 0;
+	private String fileName;
+	private JSONObject json = null;
 
-	Weather(String fileName) {
+	public Weather(String fileName) {
 		this.fileName = fileName;
 	}
 
 	public String getWeather() {
-		String ret = null;
-		if (null != json) {
-			Date date = new Date();
-			time = (long) json.get("downloadTime");
-			if (time + 3600 * 1000 > date.getTime()) {
-				return getInfo();
-			} else {
-				return download();
-			}
+		if (null == this.json) {
+			readFile();
 		}
+		if (!isUpdate()) {
+			downloadAndSave();
+		}
+		return getInfo();
+	}
+
+	private boolean isUpdate() {
+		if (null == json)
+			return false;
+		Object object = json.get("downloadTime");
+		if (!(object instanceof Long))
+			return false;
+		Date date = new Date();
+		long time = (long) object;
+		if (time + 3600 * 1000 > date.getTime()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	private void readFile() {
 		try (Scanner read = new Scanner(new File(fileName))) {
 			if (read.hasNextLine()) {
-				json = (JSONObject) JSONValue.parse(read.nextLine());
-				ret = getInfo();
-			} else
-				throw new FileNotFoundException();
-
+				this.json = (JSONObject) JSONValue.parse(read.nextLine());
+			}
 		} catch (FileNotFoundException e) {
-			ret = download();
+			// it's ok
 		}
-		return ret;
+	}
+
+	@SuppressWarnings("unchecked")
+	private void downloadAndSave() {
+		JsonFromUrl jsonDownload = new JsonFromUrl("http://api.openweathermap.org/data/2.5/weather?q=" + fileName
+				+ "&APPID=faac9b445a83f2ddd67d9b0f0fcb87a8");
+		try (PrintWriter write = new PrintWriter(fileName)) {
+			this.json = jsonDownload.pobierz();
+			Date date = new Date();
+			this.json.put("downloadTime", (long) date.getTime());
+			write.print(this.json);
+		} catch (IOException e) {
+			System.out.println("write problem");
+		}
 	}
 
 	private String getInfo() {
@@ -50,71 +74,59 @@ public class Weather {
 		JSONObject obj;
 		JSONArray arr = (JSONArray) json.get("weather");
 		obj = (JSONObject) arr.get(0);
-		weather = jsonGetString(obj,"main");
+		weather = jsonGetString(obj, "main");
 
 		obj = (JSONObject) json.get("main");
-		temp = jsonGetString(obj,"temp",true);
-		pressure = jsonGetString(obj,"pressure");
-		humidity = jsonGetString(obj,"humidity");
-		tempMax = jsonGetString(obj,"temp_max",true);
-		tempMin = jsonGetString(obj,"temp_min",true);
+		temp = jsonGetString(obj, "temp", true);
+		pressure = jsonGetString(obj, "pressure");
+		humidity = jsonGetString(obj, "humidity");
+		tempMax = jsonGetString(obj, "temp_max", true);
+		tempMin = jsonGetString(obj, "temp_min", true);
 
 		obj = (JSONObject) json.get("wind");
-		windSpeed = jsonGetString(obj,"speed");
-		windDeg = jsonGetString(obj,"deg");
+		windSpeed = jsonGetString(obj, "speed");
+		windDeg = jsonGetString(obj, "deg");
 
 		obj = (JSONObject) json.get("clouds");
-		clouds = jsonGetString(obj,"all");
+		clouds = jsonGetString(obj, "all");
 
-		String ret = "Actual weather in "+fileName+": weather: " + weather + ", temperature: " + temp + "[°C], pressure: " + pressure
-				+ "[hPa], humidity: " + humidity + "[%], max temperature: " + tempMax + "[°C], min temperature: "
-				+ tempMin + "[°C], wind speed: " + windSpeed + "[m/s], wind direction: " + windDeg
-				+ "[degrees (meteorological)], cloudiness: " + clouds + "[%]";
-		
+		String ret = "Actual weather in " + fileName + ": weather: " + weather + ", temperature: " + temp
+				+ "[°C], pressure: " + pressure + "[hPa], humidity: " + humidity + "[%], max temperature: " + tempMax
+				+ "[°C], min temperature: " + tempMin + "[°C], wind speed: " + windSpeed + "[m/s], wind direction: "
+				+ windDeg + "[degrees (meteorological)], cloudiness: " + clouds + "[%]";
+
 		return ret;
 	}
-	
-	private String jsonGetString(JSONObject obj,String name){
-		return jsonGetString(obj, name,false);
+
+	private String jsonGetString(JSONObject obj, String name) {
+		return jsonGetString(obj, name, false);
 	}
-	private String jsonGetString(JSONObject obj,String name,Boolean kelvins){
+
+	private String jsonGetString(JSONObject jObj, String name, Boolean kelvins) {
 		String ret = null;
-		try{
-			ret=(String) obj.get(name);
-		}catch (ClassCastException e){
-			try{
-				long number = (long) obj.get(name);
-				ret=String.valueOf(number);
-			}catch (ClassCastException e1){
-				try{
-					double number= (double) obj.get(name);
-					if(kelvins){
-						number-=273.15;
-					}
-					ret=String.valueOf(number);
-				}catch (ClassCastException e2){
-					System.out.println("unknow value");
-				}
+
+		Object object = jObj.get(name);
+		if (object instanceof String) {
+			ret = (String) object;
+
+		} else if (object instanceof Long) {
+			long number = (long) object;
+			if (kelvins) {
+				ret = String.valueOf((double) number - 273.15);
+			} else {
+				ret = String.valueOf(number);
 			}
-		}
-		return ret;
-	}
-	
-	@SuppressWarnings("unchecked")
-	private String download() {
-		String ret = null;
-		JsonFromUrl jsonDownload = new JsonFromUrl("http://api.openweathermap.org/data/2.5/weather?q=" + fileName
-				+ "&APPID=faac9b445a83f2ddd67d9b0f0fcb87a8");
-		try (PrintWriter write = new PrintWriter(fileName)) {
-			JSONObject json = jsonDownload.pobierz();
-			Date date = new Date();
-			json.put("downloadTime", (long) date.getTime());
-			write.print(json);
-			ret = getInfo();
-		} catch (IOException e) {
-			System.out.println("write problem");
-		}
-		return ret;
-	}
 
+		} else if (object instanceof Double) {
+			double number = (double) object;
+			if (kelvins) {
+				number -= 273.15;
+			}
+			ret = String.valueOf(number);
+
+		} else
+			System.out.println("unknow type");
+
+		return ret;
+	}
 }

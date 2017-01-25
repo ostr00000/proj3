@@ -9,7 +9,6 @@ import org.eclipse.jetty.websocket.api.annotations.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-
 @WebSocket
 public class ChatWebSocketHandler {
 	private Map<String, Chat> chats = new ConcurrentHashMap<>();
@@ -50,12 +49,12 @@ public class ChatWebSocketHandler {
 			String message = (String) json.get("message");
 
 			if (typ.equals("chat")) {
-				UserInfo u=users.get(user);
+				UserInfo u = users.get(user);
 				u.getChat().broadcastMessage(u.getName(), message);
 
 			} else if (typ.equals("main")) {
 				if (chats.containsKey(message))
-					return; 
+					return;
 				chats.put(message, new Chat(message, this));
 				makeStringJson();
 				users.entrySet().stream().filter(p -> p.getKey().isOpen() && p.getValue().getChat() == null)
@@ -76,7 +75,7 @@ public class ChatWebSocketHandler {
 			}
 
 		} catch (JSONException e) {
-			System.out.println("niespodziewana wiadomosc");
+			System.out.println("unexpected message type");
 		}
 
 	}
@@ -86,6 +85,7 @@ public class ChatWebSocketHandler {
 			this.messageJsonListOfChats = String
 					.valueOf(new JSONObject().put("chatlist", chats.keySet()).put("typ", "updateListOfChats"));
 		} catch (JSONException e) {
+			System.out.println("json problem");
 			e.printStackTrace();
 		}
 	}
@@ -94,7 +94,7 @@ public class ChatWebSocketHandler {
 		try {
 			session.getRemote().sendString(messageJsonListOfChats);
 		} catch (IOException e) {
-			System.out.println("bald przy komunikacji z urzytkownikiem");
+			System.out.println("update chat problem");
 		}
 
 	}
